@@ -24,13 +24,15 @@ Welcome to the **Trading Bot** project! This bot automates cryptocurrency tradin
 ├── backtesting/        # Scripts and data for strategy backtesting
 ├── README.md           # Project documentation (this file)
 └── .env                # Environment variables (API keys, etc.)
+```plaintext
 
 🛠️ Setup Instructions
 1. Clone the Repository
+```plaintext
 bash
-Copy code
 git clone https://github.com/your-username/trading-bot.git
 cd trading-bot
+```plaintext
 2. Install Dependencies
 Make sure you have Node.js installed, then run:
 
