@@ -24,39 +24,44 @@ Welcome to the **Trading Bot** project! This bot automates cryptocurrency tradin
 ├── backtesting/        # Scripts and data for strategy backtesting
 ├── README.md           # Project documentation (this file)
 └── .env                # Environment variables (API keys, etc.)
-```plaintext
+```
 
 🛠️ Setup Instructions
 1. Clone the Repository
-```plaintext
-bash
-git clone https://github.com/your-username/trading-bot.git
-cd trading-bot
-```plaintext
-2. Install Dependencies
-Make sure you have Node.js installed, then run:
 
 bash
-Copy code
+```plaintext
+git clone https://github.com/your-username/trading-bot.git
+cd trading-bot
+```
+
+2. Install Dependencies
+Make sure you have Node.js installed, then run:
+bash
+```plaintext
 npm install
+```
+
 3. Configure API Keys
 Copy the .env.example file to .env and insert your Bybit API key and secret.
 
 bash
-Copy code
+```plaintext
 cp .env.example .env
+```
 Modify .env with your API credentials:
 
 bash
-Copy code
+```plaintext
 BYBIT_API_KEY=your_api_key_here
 BYBIT_API_SECRET=your_api_secret_here
+```
 4. Run the Bot
 Start the bot with:
-
 bash
-Copy code
+```plaintext
 node src/main.js
+```
 📈 Supported Trading Strategies
 The bot currently supports the following strategies:
 
