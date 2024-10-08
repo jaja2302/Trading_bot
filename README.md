@@ -60,7 +60,7 @@ BYBIT_API_SECRET=your_api_secret_here
 Start the bot with:
 bash
 ```plaintext
-node src/main.js
+node index.js
 ```
 📈 Supported Trading Strategies
 The bot currently supports the following strategies:
