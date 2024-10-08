@@ -32,6 +32,8 @@ Welcome to the **Trading Bot** project! This bot automates cryptocurrency tradin
 bash
 ```plaintext
 git clone https://github.com/your-username/trading-bot.git](https://github.com/jaja2302/Trading_bot.git
+```
+```plaintext
 cd trading-bot
 ```
 
