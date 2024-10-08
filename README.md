@@ -75,13 +75,9 @@ Trading cryptocurrencies involves risk. The bot is provided as-is with no guaran
 
 🧠 Contributing
 We welcome contributions! To contribute:
-
 Fork the repository.
 Create a new branch for your feature or bugfix.
 Submit a pull request for review.
-🛡️ License
-This project is licensed under the MIT License. See the LICENSE file for more information.
-
 📊 Real-time Trading Dashboard (Optional)
 You can integrate a real-time dashboard to monitor your trading activity, profits, and market conditions in your browser using libraries like socket.io, express, and chart.js. Stay tuned for updates in future releases!
 
