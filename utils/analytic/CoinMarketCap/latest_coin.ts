@@ -14,7 +14,7 @@ export const fetchCryptocurrencyListings =
   async (): Promise<CryptocurrencyResponse | null> => {
     try {
       const response: AxiosResponse<CryptocurrencyResponse> = await axios.get(
-        'https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest',
+        'https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/trending/latest',
         {
           headers: {
             'X-CMC_PRO_API_KEY': '35436a78-f75f-466c-a1c0-098af1116df9',
@@ -24,7 +24,7 @@ export const fetchCryptocurrencyListings =
 
       // success
       const json: CryptocurrencyResponse = response.data;
-      console.log(json);
+      // console.log(json);
       return json; // Return the JSON response
     } catch (ex) {
       console.error(ex);
