@@ -1,4 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
+import dotenv from 'dotenv';
+dotenv.config();
 
 interface CryptocurrencyResponse {
   data: {
@@ -17,7 +19,7 @@ export const fetchCryptocurrencyListings =
         'https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/trending/latest',
         {
           headers: {
-            'X-CMC_PRO_API_KEY': '35436a78-f75f-466c-a1c0-098af1116df9',
+            'X-CMC_PRO_API_KEY': process.env.API_KEY_COINMARKETCAP,
           },
         },
       );
