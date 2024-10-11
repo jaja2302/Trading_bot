@@ -9,15 +9,18 @@
     "build": "tsc",
     "lint": "eslint 'src/**/*.{ts,js}'",
     "start": "nodemon --exec tsx src/index.ts",
+    "tele": "tsx telebot/telebot.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/puppeteer": "^7.0.4",
     "axios": "^1.7.7",
     "bybit-api": "^3.10.19",
     "ccxt": "^4.4.14",
     "dotenv": "^16.4.5",
+    "puppeteer": "^23.5.3",
     "technicalindicators": "^3.1.0"
   },
   "devDependencies": {
