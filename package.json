@@ -10,6 +10,7 @@
     "lint": "eslint 'src/**/*.{ts,js}'",
     "start": "nodemon --exec tsx src/index.ts",
     "tele": "tsx telebot/telebot.ts",
+    "testing": "tsx telebot/mousesimulate.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

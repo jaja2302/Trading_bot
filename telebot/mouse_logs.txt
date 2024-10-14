@@ -1,0 +1,44 @@
+VM5561:2 Mouse clicked at coordinates: 221 225
+  //  await SimulateClicksInFrame(page, iframeSelector, buttonSelector);
+  
+
+async function SimulateClicksInFrame(page :any, iframeSelector :any, buttonSelector : any) {
+  // Wait for the iframe to load
+  const frameHandle = await page.waitForSelector(iframeSelector, { visible: true });
+  const frame = await frameHandle.contentFrame();
+
+  if (!frame) {
+    console.error('Failed to get the iframe content frame.');
+    return;
+  }
+
+  console.log('Iframe detected successfully.');
+
+  // Simulate mouse clicks to make the button visible
+  const mouseActions = [
+    { actionType: 'click', coordinates: { x: 196, y: 281 } }, // Adjust these coordinates as needed
+    { actionType: 'click', coordinates: { x: 196, y: 281 } }  // Same coordinates for the double click
+  ];
+
+  for (const action of mouseActions) {
+    const { actionType, coordinates } = action;
+    if (actionType === 'click') {
+      await frame.mouse.click(coordinates.x, coordinates.y);
+      console.log(`Simulated click at (${coordinates.x}, ${coordinates.y})`);
+      await delay(500); // Add delay to mimic human behavior
+    }
+  }
+
+  // Wait for the button to be visible
+  await frame.waitForSelector(buttonSelector, { visible: true, timeout: 30000 });
+
+  // Click the button once it's visible
+  const button = await frame.$(buttonSelector);
+  if (button) {
+    await button.click();
+    console.log('Successfully clicked the button inside the iframe.');
+  } else {
+    console.error('Button not found inside the iframe.');
+  }
+}
+

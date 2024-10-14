@@ -1,12 +1,18 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
+import readline from 'readline';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import path from 'path';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const SESSION_FILE_PATH = './telegram_session.json';
 
-async function saveSession(page: puppeteer.Page) {
+async function saveSession(page) {
   const cookies = await page.cookies();
   const localStorageData = await page.evaluate(() => {
-    const data: { [key: string]: string } = {};
+    const data = {};
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key) {
@@ -24,13 +30,13 @@ async function saveSession(page: puppeteer.Page) {
   console.log('Session has been saved.');
 }
 
-async function loadSession(page: puppeteer.Page) {
+async function loadSession(page) {
   if (fs.existsSync(SESSION_FILE_PATH)) {
     const sessionData = JSON.parse(fs.readFileSync(SESSION_FILE_PATH, 'utf-8'));
 
     await page.setCookie(...sessionData.cookies);
 
-    await page.evaluateOnNewDocument((session: any) => {
+    await page.evaluateOnNewDocument((session) => {
       localStorage.clear();
       for (const key in session) {
         localStorage.setItem(key, session[key]);
@@ -40,12 +46,30 @@ async function loadSession(page: puppeteer.Page) {
     console.log('Session has been loaded.');
     return true;
   }
-
   return false;
 }
-// Delay function for waiting
-function delay(ms: any) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+async function tryClickButton(page, selector, buttonName, maxAttempts = 3) {
+  let clickCount = 0;
+  let clicked = false;
+
+  while (clickCount < maxAttempts && !clicked) {
+    try {
+      // Wait for the button to be visible
+      await page.waitForSelector(selector, { visible: true, timeout: 5000 });
+      // Click the button
+      await page.click(selector);
+      console.log(`Clicked the ${buttonName} button (Attempt ${clickCount + 1}).`);
+      clicked = true;
+    } catch (error) {
+      console.log(`Could not find the ${buttonName} button (Attempt ${clickCount + 1}).`);
+    }
+    clickCount++;
+    await delay(2000); // Wait for 2 seconds before retrying
+  }
+
+  if (!clicked) {
+    console.log(`Failed to click the ${buttonName} button after ${maxAttempts} attempts.`);
+  }
 }
 
 async function loginAndClaimReward() {
@@ -55,7 +79,7 @@ async function loginAndClaimReward() {
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--disable-notifications', // This disables notification prompts
+      '--disable-notifications', // Disable notification prompts
     ],
   });
   const page = await browser.newPage();
@@ -73,205 +97,152 @@ async function loginAndClaimReward() {
   const specificUrl = 'https://web.telegram.org/a/#7249432100'; // Replace with the specific link
   await page.goto(specificUrl);
 
-  // Wait for the specific text "What can this bot do?" to show up
+  // Wait for the specific bot information text to appear
   console.log('Waiting for the bot information text to appear...');
   await page.waitForSelector('div.lbMO1XqP > p.ELYpyMpR', {
     visible: true,
     timeout: 60000, // Wait up to 60 seconds for the element
   });
 
-  console.log(
-    'Bot information text appeared, now searching for the "Start" button.',
-  );
+  console.log('Bot information text appeared, now searching for the "Start" button.');
 
-  // Try clicking the "Start" button up to 3 times
-  let modalAppeared = false;
-  let clickCount = 0;
+  // Try clicking the "Start" button
+  const startButtonSelector = 'button.bot-menu.open.default.translucent.round span.bot-menu-text';
+  await tryClickButton(page, startButtonSelector, '"Start"');
 
-  while (clickCount < 3 && !modalAppeared) {
-    console.log(
-      `Attempting to click "Start" button (Attempt ${clickCount + 1})`,
-    );
+  // Try clicking the "Confirm" button
+  const confirmButtonSelector = 'button.confirm-dialog-button.default.primary.text';
+  await tryClickButton(page, confirmButtonSelector, '"Confirm"');
 
-    // Use a more specific selector for the "Start" button
-    const startButtonSelector =
-      'button.bot-menu.open.default.translucent.round span.bot-menu-text';
-
-    try {
-      // Wait for the "Start" button to be visible
-      await page.waitForSelector(startButtonSelector, {
-        visible: true,
-        timeout: 5000,
-      });
-      // Click the "Start" button
-      await page.click(startButtonSelector);
-      console.log(`Clicked the "Start" button (Attempt ${clickCount + 1}).`);
-
-      // Adding a short delay after the click
-      await delay(2000); // Wait for 2 seconds before checking for the modal
-
-      // Check if the modal appeared
-      try {
-        await page.waitForSelector('.modal-content.custom-scroll', {
-          visible: true,
-          timeout: 5000,
-        });
-        console.log('Modal appeared!');
-        modalAppeared = true;
-      } catch (error) {
-        console.log('Modal did not appear, trying again...');
-      }
-    } catch (error) {
-      console.log(
-        `Could not find the "Start" button (Attempt ${clickCount + 1}).`,
-      );
-    }
-
-    clickCount++;
-    await delay(2000); // Wait for 2 seconds before trying again
+  // Handling iframe and the "Let’s Gooooooo!" button
+  const iframeSelector = 'iframe.OmY14FFl'; // Adjust this selector as necessary
+  delay(2000)
+  const frameHandle = await page.$(iframeSelector);
+  if (!frameHandle) {
+    console.log('Iframe not found. Exiting...');
+    return;
   }
+  const frame = await frameHandle.contentFrame();
+  
+  console.log('Iframe detected successfully.');
 
-  if (modalAppeared) {
-    // Try clicking the "Confirm" button up to 3 times
-    let confirmClicked = false;
-    let confirmAttemptCount = 0;
+  // Wait for the modal selector after getting the frame
+  await delay(3000); // Wait for 3 seconds after getting the frame
 
-    while (confirmAttemptCount < 3 && !confirmClicked) {
-      console.log(
-        `Attempting to click "Confirm" button (Attempt ${confirmAttemptCount + 1})`,
-      );
+  // Check for the modal in iframe
+  const modalSelector = 'div._button_container_1drph_81';
+  await frame.waitForSelector(modalSelector, {
+      visible: true,
+      timeout: 30000, // Increase to 30 seconds
+  });
 
-      // Use the selector for the "Confirm" button
-      const confirmButtonSelector =
-        'button.confirm-dialog-button.default.primary.text';
+  // Now click the "Let’s Gooooooo!" button
+  const goButtonSelector = 'button._button_1drph_81';
+  await tryClickButton(frame, goButtonSelector, '"Let’s Gooooooo!"', 3);
+  const buttonSelector = 'button._button_hqiqj_147';
+   // Coordinates to click
+   const x = 221;
+   const y = 225;
 
+   // Simulate a click at the specified coordinates in the iframe
+  await frame.click('body', { offset: { x, y } });
+
+  await checkAndClickPaintButton(frame);
+}
+async function checkAndClickPaintButton(frame) {
+  const buttonSelector = 'button._button_hqiqj_147';
+  const checkInterval = 540000; // Check every 9 minutes (9 * 60 * 1000 ms)
+  const clickDelay = 2000; // Delay between clicks (2 seconds)
+  
+  // Function to get the value from the button
+  async function getValue() {
       try {
-        // Wait for the "Confirm" button to be visible
-        await page.waitForSelector(confirmButtonSelector, {
-          visible: true,
-          timeout: 5000,
-        });
-        // Click the "Confirm" button
-        await page.click(confirmButtonSelector);
-        console.log(
-          `Clicked the "Confirm" button (Attempt ${confirmAttemptCount + 1}).`,
-        );
+          // Select the counter element
+          const counterElement = await frame.$('div._counter_oxfjd_32');
 
-        // Adding a short delay after the click
-        await delay(2000); // Wait for 2 seconds before checking the next attempt
-
-        confirmClicked = true; // Successfully clicked
-      } catch (error) {
-        console.log(
-          `Could not find the "Confirm" button (Attempt ${confirmAttemptCount + 1}).`,
-        );
-      }
-
-      confirmAttemptCount++;
-      await delay(2000); // Wait for 2 seconds before trying again
-    }
-
-    if (confirmClicked) {
-      console.log('Successfully clicked the "Confirm" button.');
-
-      try {
-        // Wait for the iframe to load
-        const iframeSelector = 'iframe.OmY14FFl'; // Adjust this selector as necessary
-        await page.waitForSelector(iframeSelector, {
-          visible: true,
-          timeout: 10000,
-        });
-
-        // Get the iframe element
-        const frameHandle = await page.$(iframeSelector);
-
-        // Get the content frame
-        const frame = await frameHandle.contentFrame();
-
-        // Log frame detection
-        console.log('Iframe detected successfully.');
-
-        // Wait for the modal to appear within the iframe context
-        const modalSelector = 'div._button_container_1drph_81';
-
-        try {
-          await frame.waitForSelector(modalSelector, {
-            visible: true,
-            timeout: 10000,
-          });
-
-          // Log the inner HTML of the modal for debugging
-          const modalContent = await frame.$eval(
-            modalSelector,
-            (modal) => modal.innerHTML,
-          );
-          console.log('Modal content:', modalContent);
-        } catch (modalError) {
-          console.log(
-            'Modal did not appear within the timeout period:',
-            modalError.message,
-          );
-          return; // Exit the function early if the modal is not found
-        }
-
-        // Now check for the button
-        const buttonSelector = 'button._button_1drph_81';
-        let goButtonAttemptCount = 0;
-        let goButtonClicked = false;
-
-        while (goButtonAttemptCount < 3 && !goButtonClicked) {
-          console.log(
-            `Attempting to click "Let’s Gooooooo!" button (Attempt ${goButtonAttemptCount + 1})`,
-          );
-
-          try {
-            // Wait for the button to appear and be visible
-            await frame.waitForSelector(buttonSelector, {
-              visible: true,
-              timeout: 5000,
-            });
-
-            const button = await frame.$(buttonSelector); // Get the button
-
-            if (button) {
-              await button.click();
-              console.log(
-                `Clicked the "Let’s Gooooooo!" button (Attempt ${goButtonAttemptCount + 1}).`,
-              );
-              goButtonClicked = true; // Successfully clicked
-            } else {
-              throw new Error('Button not found');
-            }
-          } catch (error) {
-            console.log(
-              `Could not find the "Let’s Gooooooo!" button (Attempt ${goButtonAttemptCount + 1}). Error: ${error.message}`,
-            );
+          if (!counterElement) {
+              console.log(`Counter element not found.`);
+              return 0; // Return 0 if the element is not found
           }
 
-          goButtonAttemptCount++;
-          await delay(2000); // Wait for 2 seconds before trying again
-        }
-
-        if (goButtonClicked) {
-          console.log('Successfully clicked the "Let’s Gooooooo!" button.');
-        } else {
-          console.log(
-            'Failed to click the "Let’s Gooooooo!" button after 3 attempts.',
-          );
-        }
+          // Get the value text from the second span inside the counter
+          const valueText = await counterElement.$eval('span:nth-of-type(2)', el => el.textContent.trim());
+          
+          const value = parseInt(valueText, 10) || 0; // Convert to integer, defaulting to 0 if NaN
+          console.log(`Current value: ${value}`); // Log the current value for debugging
+          return value;
       } catch (error) {
-        console.log('Error while trying to click the button:', error);
+          console.error(`Error retrieving value: ${error.message}`);
+          return 0; // Return 0 in case of any error
       }
-    } else {
-      console.log('Failed to click the "Confirm" button after 3 attempts.');
-    }
-  } else {
-    console.log('The modal did not appear after 3 attempts.');
   }
 
-  // Close the browser (optional)
-  // await browser.close();
+  while (true) {
+      const value = await getValue();
+      console.log(`Current value: ${value}`);
+
+      if (value > 0) {
+          console.log('Clicking the Paint button...');
+          await frame.click(buttonSelector); // Click the button
+          await delay(clickDelay); // Wait for 2 seconds before the next click
+      } 
+      
+      if (value === 0) {
+          console.log('Value is 0, waiting for 9 minutes to check again...');
+          await delay(checkInterval); // Wait for 9 minutes
+      }
+  }
 }
 
-// Start the bot
-loginAndClaimReward().catch(console.error);
+// Utility function to introduce a delay
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+
+let claimTimeout = 0;
+
+const promptUser = () => {
+  rl.question('1. Run bot\n2. Set timeout (minutes)\n3. Check coin balance\nChoose an option: ', async (option) => {
+    switch (option) {
+      case '1':
+        if (claimTimeout > 0) {
+          console.log(`Claiming rewards every ${claimTimeout} minutes...`);
+          // Run the bot repeatedly based on the timeout
+          while (true) {
+            await loginAndClaimReward(claimTimeout * 60 * 1000);
+            await delay(claimTimeout * 60 * 1000); // Wait for the next run
+          }
+        } else {
+          await loginAndClaimReward();
+        }
+        break;
+
+      case '2':
+        rl.question('Set timeout for claim (in minutes): ', (minutes) => {
+          claimTimeout = parseInt(minutes, 10);
+          console.log(`Timeout set to ${claimTimeout} minutes.`);
+          promptUser(); // Prompt again
+        });
+        break;
+
+      case '3':
+        // Replace with actual implementation for checking balance
+        console.log('Checking coin balance... (implement this)');
+        promptUser(); // Prompt again
+        break;
+
+      default:
+        console.log('Invalid option. Please choose again.');
+        promptUser(); // Prompt again
+        break;
+    }
+  });
+};
+
+promptUser();
