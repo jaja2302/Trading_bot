@@ -189,7 +189,7 @@ async function checkAndClickPaintButton(frame) {
       
       if (value === 0) {
           console.log('Value is 0, waiting for 9 minutes to check again...');
-          await delay(checkInterval); // Wait for 9 minutes
+          await delay(checkInterval); // Wait dfor 9 minutes
       }
   }
 }
